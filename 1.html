@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱系统</title>
+    <style>
+        /* 基本样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            width: 200px;
+            float: left;
+            padding: 10px;
+        }
+
+        .main-content {
+            margin-left: 220px;
+            padding: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .email-list {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .email-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .email-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .compose-form {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .lunar-scheduler {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <button class="btn" onclick="showCompose()">写邮件</button>
+            <hr>
+            <div>
+                <p>文件夹</p>
+                <ul>
+                    <li onclick="showInbox()">收件箱</li>
+                    <li onclick="showSent()">已发送</li>
+                    <li onclick="showDrafts()">草稿箱</li>
+                    <li onclick="showScheduled()">定时邮件</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- 写邮件表单 -->
+            <div id="compose-section" style="display: none;">
+                <h2>写邮件</h2>
+                <div class="compose-form">
+                    <div class="form-group">
+                        <label>收件人：</label>
+                        <input type="email" id="recipient" required>
+                    </div>
+                    <div class="form-group">
+                        <label>主题：</label>
+                        <input type="text" id="subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label>内容：</label>
+                        <textarea id="content" rows="10" required></textarea>
+                    </div>
+                    <button class="btn" onclick="sendEmail()">发送</button>
+                    <button class="btn" onclick="showLunarScheduler()">设置农历定时</button>
+                </div>
+
+                <!-- 农历定时设置 -->
+                <div id="lunar-scheduler" class="lunar-scheduler" style="display: none;">
+                    <h3>农历定时设置</h3>
+                    <div class="form-group">
+                        <label>农历年：</label>
+                        <input type="number" id="lunar-year" min="2024" value="2024">
+                    </div>
+                    <div class="form-group">
+                        <label>农历月：</label>
+                        <select id="lunar-month">
+                            <!-- 1-12月 -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>农历日：</label>
+                        <select id="lunar-day">
+                            <!-- 1-30日 -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>时间：</label>
+                        <input type="time" id="schedule-time">
+                    </div>
+                    <button class="btn" onclick="scheduleEmail()">确定定时</button>
+                </div>
+            </div>
+
+            <!-- 邮件列表 -->
+            <div id="email-list" class="email-list">
+                <!-- 邮件列表将通过JavaScript动态添加 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化农历月份选择器
+        function initLunarMonthSelect() {
+            const monthSelect = document.getElementById('lunar-month');
+            for (let i = 1; i <= 12; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + '月';
+                monthSelect.appendChild(option);
+            }
+        }
+
+        // 初始化农历日期选择器
+        function initLunarDaySelect() {
+            const daySelect = document.getElementById('lunar-day');
+            for (let i = 1; i <= 30; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i + '日';
+                daySelect.appendChild(option);
+            }
+        }
+
+        // 显示写邮件界面
+        function showCompose() {
+            document.getElementById('compose-section').style.display = 'block';
+            document.getElementById('email-list').style.display = 'none';
+        }
+
+        // 显示农历定时设置
+        function showLunarScheduler() {
+            document.getElementById('lunar-scheduler').style.display = 'block';
+        }
+
+        // 发送邮件
+        function sendEmail() {
+            const recipient = document.getElementById('recipient').value;
+            const subject = document.getElementById('subject').value;
+            const content = document.getElementById('content').value;
+
+            if (!recipient || !subject || !content) {
+                alert('请填写完整邮件信息！');
+                return;
+            }
+
+            // 这里添加发送邮件的实际逻辑
+            alert('邮件已发送！');
+            clearComposeForm();
+        }
+
+        // 设置定时邮件
+        function scheduleEmail() {
+            const lunarYear = document.getElementById('lunar-year').value;
+            const lunarMonth = document.getElementById('lunar-month').value;
+            const lunarDay = document.getElementById('lunar-day').value;
+            const scheduleTime = document.getElementById('schedule-time').value;
+
+            // 这里需要添加农历转公历的计算逻辑
+            // 实际项目中建议使用专门的农历日期转换库
+
+            alert(`邮件已设置在农历 ${lunarYear}年${lunarMonth}月${lunarDay}日 ${scheduleTime} 发送`);
+            document.getElementById('lunar-scheduler').style.display = 'none';
+        }
+
+        // 清空写邮件表单
+        function clearComposeForm() {
+            document.getElementById('recipient').value = '';
+            document.getElementById('subject').value = '';
+            document.getElementById('content').value = '';
+            document.getElementById('lunar-scheduler').style.display = 'none';
+        }
+
+        // 显示收件箱
+        function showInbox() {
+            document.getElementById('compose-section').style.display = 'none';
+            document.getElementById('email-list').style.display = 'block';
+            // 这里添加加载收件箱邮件的逻辑
+            displayEmails('inbox');
+        }
+
+        // 显示已发送邮件
+        function showSent() {
+            document.getElementById('compose-section').style.display = 'none';
+            document.getElementById('email-list').style.display = 'block';
+            // 这里添加加载已发送邮件的逻辑
+            displayEmails('sent');
+        }
+
+        // 显示草稿箱
+        function showDrafts() {
+            document.getElementById('compose-section').style.display = 'none';
+            document.getElementById('email-list').style.display = 'block';
+            // 这里添加加载草稿箱邮件的逻辑
+            displayEmails('drafts');
+        }
+
+        // 显示定时邮件
+        function showScheduled() {
+            document.getElementById('compose-section').style.display = 'none';
+            document.getElementById('email-list').style.display = 'block';
+            // 这里添加加载定时邮件的逻辑
+            displayEmails('scheduled');
+        }
+
+        // 显示邮件列表
+        function displayEmails(folder) {
+            const emailList = document.getElementById('email-list');
+            emailList.innerHTML = ''; // 清空当前列表
+
+            // 模拟邮件数据
+            const emails = [
+                { subject: '测试邮件1', sender: 'test1@example.com', date: '2024-01-01' },
+                { subject: '测试邮件2', sender: 'test2@example.com', date: '2024-01-02' }
+            ];
+
+            emails.forEach(email => {
+                const emailItem = document.createElement('div');
+                emailItem.className = 'email-item';
+                emailItem.innerHTML = `
+                    <strong>${email.subject}</strong><br>
+                    <span>${email.sender}</span><br>
+                    <small>${email.date}</small>
+                `;
+                emailList.appendChild(emailItem);
+            });
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            initLunarMonthSelect();
+            initLunarDaySelect();
+            showInbox(); // 默认显示收件箱
+        };
+    </script>
+</body>
+</html>
