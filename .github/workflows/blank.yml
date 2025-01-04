@@ -1,0 +1,44 @@
+name: Ubuntu Setup Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install xrdp and configure for root
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xrdp
+          sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
+          echo "root:${{ secrets.ROOT_PASSWORD }}" | sudo chpasswd
+
+      - name: Install ngrok
+        run: |
+          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -O ngrok.zip
+          unzip ngrok.zip
+          chmod +x ngrok
+          sudo mv ngrok /usr/local/bin/
+
+      - name: Start ngrok TCP tunnel
+        run: |
+          ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          ngrok tcp --region eu 3389 &
+          sleep 5
+          public_ip=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.proto == "tcp") | .public_url')
+          echo "NGROK_PUBLIC_IP=$public_ip" >> $GITHUB_ENV
+          echo "Public IP Address: $public_ip"
+
+      - name: Keep Alive
+        run: |
+          while true; do
+            echo "Workflow is running..."
+            sleep 3600
+          done
