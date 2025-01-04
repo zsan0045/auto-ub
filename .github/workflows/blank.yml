@@ -21,11 +21,14 @@ jobs:
           echo "root:${{ secrets.ROOT_PASSWORD }}" | sudo chpasswd
 
       - name: Install ngrok
-        run: |
-          wget https://ngrok.com/download/ngrok-stable-linux-amd64.zip -O ngrok.zip
-          unzip ngrok.zip
-          chmod +x ngrok
-          sudo mv ngrok /usr/local/bin/
+  run: |
+    # 添加 ngrok 官方的 APT 仓库源
+    curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+    echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+
+    # 更新 apt 源并安装 ngrok
+    sudo apt update
+    sudo apt install -y ngrok
 
       - name: Start ngrok TCP tunnel
         run: |
